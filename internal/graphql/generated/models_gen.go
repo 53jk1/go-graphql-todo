@@ -2,8 +2,14 @@
 
 package generated
 
+type NewTodo struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
 type Todo struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Completed bool   `json:"completed"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	IsCompleted bool   `json:"isCompleted"`
 }

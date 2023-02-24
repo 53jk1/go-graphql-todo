@@ -43,9 +43,9 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		CreateTodo func(childComplexity int, title string) int
+		CreateTodo func(childComplexity int, title string, description string) int
 		DeleteTodo func(childComplexity int, id string) int
-		UpdateTodo func(childComplexity int, id string, title *string, completed *bool) int
+		UpdateTodo func(childComplexity int, id string, title *string, description *string, isCompleted *bool) int
 	}
 
 	Query struct {
@@ -53,15 +53,16 @@ type ComplexityRoot struct {
 	}
 
 	Todo struct {
-		Completed func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Title     func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		IsCompleted func(childComplexity int) int
+		Title       func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	CreateTodo(ctx context.Context, title string) (*Todo, error)
-	UpdateTodo(ctx context.Context, id string, title *string, completed *bool) (*Todo, error)
+	CreateTodo(ctx context.Context, title string, description string) (*Todo, error)
+	UpdateTodo(ctx context.Context, id string, title *string, description *string, isCompleted *bool) (*Todo, error)
 	DeleteTodo(ctx context.Context, id string) (bool, error)
 }
 type QueryResolver interface {
@@ -93,7 +94,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTodo(childComplexity, args["title"].(string)), true
+		return e.complexity.Mutation.CreateTodo(childComplexity, args["title"].(string), args["description"].(string)), true
 
 	case "Mutation.deleteTodo":
 		if e.complexity.Mutation.DeleteTodo == nil {
@@ -117,7 +118,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateTodo(childComplexity, args["id"].(string), args["title"].(*string), args["completed"].(*bool)), true
+		return e.complexity.Mutation.UpdateTodo(childComplexity, args["id"].(string), args["title"].(*string), args["description"].(*string), args["isCompleted"].(*bool)), true
 
 	case "Query.todos":
 		if e.complexity.Query.Todos == nil {
@@ -126,12 +127,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Todos(childComplexity), true
 
-	case "Todo.completed":
-		if e.complexity.Todo.Completed == nil {
+	case "Todo.description":
+		if e.complexity.Todo.Description == nil {
 			break
 		}
 
-		return e.complexity.Todo.Completed(childComplexity), true
+		return e.complexity.Todo.Description(childComplexity), true
 
 	case "Todo.id":
 		if e.complexity.Todo.ID == nil {
@@ -139,6 +140,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Todo.ID(childComplexity), true
+
+	case "Todo.isCompleted":
+		if e.complexity.Todo.IsCompleted == nil {
+			break
+		}
+
+		return e.complexity.Todo.IsCompleted(childComplexity), true
 
 	case "Todo.title":
 		if e.complexity.Todo.Title == nil {
@@ -154,7 +162,9 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputNewTodo,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -217,7 +227,13 @@ var sources = []*ast.Source{
 	{Name: "../schema.graphql", Input: `type Todo {
     id: ID!
     title: String!
-    completed: Boolean!
+    description: String!
+    isCompleted: Boolean!
+}
+
+input NewTodo {
+    title: String!
+    description: String!
 }
 
 type Query {
@@ -225,8 +241,8 @@ type Query {
 }
 
 type Mutation {
-    createTodo(title: String!): Todo!
-    updateTodo(id: ID!, title: String, completed: Boolean): Todo!
+    createTodo(title: String!, description: String!): Todo!
+    updateTodo(id: ID!, title: String, description: String, isCompleted: Boolean): Todo!
     deleteTodo(id: ID!): Boolean!
 }`, BuiltIn: false},
 }
@@ -248,6 +264,15 @@ func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, 
 		}
 	}
 	args["title"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["description"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["description"] = arg1
 	return args, nil
 }
 
@@ -287,15 +312,24 @@ func (ec *executionContext) field_Mutation_updateTodo_args(ctx context.Context, 
 		}
 	}
 	args["title"] = arg1
-	var arg2 *bool
-	if tmp, ok := rawArgs["completed"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completed"))
-		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+	var arg2 *string
+	if tmp, ok := rawArgs["description"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["completed"] = arg2
+	args["description"] = arg2
+	var arg3 *bool
+	if tmp, ok := rawArgs["isCompleted"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isCompleted"))
+		arg3, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["isCompleted"] = arg3
 	return args, nil
 }
 
@@ -366,7 +400,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTodo(rctx, fc.Args["title"].(string))
+		return ec.resolvers.Mutation().CreateTodo(rctx, fc.Args["title"].(string), fc.Args["description"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -394,8 +428,10 @@ func (ec *executionContext) fieldContext_Mutation_createTodo(ctx context.Context
 				return ec.fieldContext_Todo_id(ctx, field)
 			case "title":
 				return ec.fieldContext_Todo_title(ctx, field)
-			case "completed":
-				return ec.fieldContext_Todo_completed(ctx, field)
+			case "description":
+				return ec.fieldContext_Todo_description(ctx, field)
+			case "isCompleted":
+				return ec.fieldContext_Todo_isCompleted(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Todo", field.Name)
 		},
@@ -428,7 +464,7 @@ func (ec *executionContext) _Mutation_updateTodo(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateTodo(rctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["completed"].(*bool))
+		return ec.resolvers.Mutation().UpdateTodo(rctx, fc.Args["id"].(string), fc.Args["title"].(*string), fc.Args["description"].(*string), fc.Args["isCompleted"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -456,8 +492,10 @@ func (ec *executionContext) fieldContext_Mutation_updateTodo(ctx context.Context
 				return ec.fieldContext_Todo_id(ctx, field)
 			case "title":
 				return ec.fieldContext_Todo_title(ctx, field)
-			case "completed":
-				return ec.fieldContext_Todo_completed(ctx, field)
+			case "description":
+				return ec.fieldContext_Todo_description(ctx, field)
+			case "isCompleted":
+				return ec.fieldContext_Todo_isCompleted(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Todo", field.Name)
 		},
@@ -572,8 +610,10 @@ func (ec *executionContext) fieldContext_Query_todos(ctx context.Context, field 
 				return ec.fieldContext_Todo_id(ctx, field)
 			case "title":
 				return ec.fieldContext_Todo_title(ctx, field)
-			case "completed":
-				return ec.fieldContext_Todo_completed(ctx, field)
+			case "description":
+				return ec.fieldContext_Todo_description(ctx, field)
+			case "isCompleted":
+				return ec.fieldContext_Todo_isCompleted(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Todo", field.Name)
 		},
@@ -796,8 +836,8 @@ func (ec *executionContext) fieldContext_Todo_title(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Todo_completed(ctx context.Context, field graphql.CollectedField, obj *Todo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Todo_completed(ctx, field)
+func (ec *executionContext) _Todo_description(ctx context.Context, field graphql.CollectedField, obj *Todo) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Todo_description(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -810,7 +850,51 @@ func (ec *executionContext) _Todo_completed(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Completed, nil
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Todo_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Todo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Todo_isCompleted(ctx context.Context, field graphql.CollectedField, obj *Todo) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Todo_isCompleted(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsCompleted, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -827,7 +911,7 @@ func (ec *executionContext) _Todo_completed(ctx context.Context, field graphql.C
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Todo_completed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Todo_isCompleted(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Todo",
 		Field:      field,
@@ -2613,6 +2697,42 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj interface{}) (NewTodo, error) {
+	var it NewTodo
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2747,9 +2867,16 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "completed":
+		case "description":
 
-			out.Values[i] = ec._Todo_completed(ctx, field, obj)
+			out.Values[i] = ec._Todo_description(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "isCompleted":
+
+			out.Values[i] = ec._Todo_isCompleted(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
