@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/53jk1/go-graphql-todo/internal/database"
 	"log"
 	"net/http"
 
@@ -14,6 +15,13 @@ import (
 const defaultPort = "8080"
 
 func main() {
+
+	db, err := database.NewDB()
+	if err != nil {
+		log.Fatalf("error creating database connection: %v", err)
+	}
+	defer db.Close()
+
 	port := defaultPort
 
 	todoRepo := models.NewTodoRepository()

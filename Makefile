@@ -22,7 +22,8 @@ run:
 
 run-dev:
 	@echo "Running $(APP_NAME) $(VERSION) in development mode"
-	go run $(GOFLAGS) ./cmd/server
+
+	go run $(GOFLAGS) ./cmd/server -config ./config.dev.yml
 
 format:
 	@echo "Formatting source code..."
@@ -43,6 +44,14 @@ install-gqlgen:
 gqlgen:
 	@echo "Generating GraphQL code..."
 	go run github.com/99designs/gqlgen generate
+
+docker-build:
+	@echo "Building $(APP_NAME) $(VERSION) in Docker"
+	docker-compose build
+
+docker-run:
+	@echo "Running $(APP_NAME) $(VERSION) in Docker"
+	docker-compose up
 
 .PHONY: help
 help:
