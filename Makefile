@@ -20,6 +20,10 @@ run:
 	@echo "Running $(APP_NAME) $(VERSION)"
 	$(BUILD_DIR)/$(APP_NAME)
 
+run-dev:
+	@echo "Running $(APP_NAME) $(VERSION) in development mode"
+	go run $(GOFLAGS) ./cmd/server
+
 format:
 	@echo "Formatting source code..."
 	go fmt $(GO_FILES)
@@ -32,9 +36,13 @@ lint:
 	@echo "Running linter..."
 	golangci-lint run
 
+install-gqlgen:
+	@echo "Installing gqlgen..."
+	go get -u github.com/99designs/gqlgen
+
 gqlgen:
 	@echo "Generating GraphQL code..."
-	go run github.com/99designs/gqlgen generate --config gqlgen.yml --verbose
+	go run github.com/99designs/gqlgen generate
 
 .PHONY: help
 help:
