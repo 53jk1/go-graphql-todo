@@ -2,70 +2,80 @@ package models
 
 import (
 	"errors"
-	"github.com/dgryski/trifles/uuid"
 	"sync"
-)
 
-type Todo struct {
-	ID          string
-	Title       string
-	Description string
-	IsCompleted bool
-}
+	"github.com/dgryski/trifles/uuid"
+	l "github.com/sirupsen/logrus"
+
+	"github.com/53jk1/go-graphql-todo/internal/database"
+	"github.com/53jk1/go-graphql-todo/internal/graphql/generated"
+)
 
 type TodoRepository struct {
 	mu    sync.RWMutex
-	items map[string]*Todo
+	items map[string]*generated.Todo
+	db    *database.DB
 }
 
 func NewTodoRepository() *TodoRepository {
 	return &TodoRepository{
-		items: make(map[string]*Todo),
+		items: make(map[string]*generated.Todo),
 		mu:    sync.RWMutex{},
+		db:    &database.DB{},
 	}
 }
 
-func (r *TodoRepository) FindAll() ([]*Todo, error) {
+func (r *TodoRepository) FindAll() ([]*generated.Todo, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var todos []*Todo
+	var todos []*generated.Todo
 	for _, todo := range r.items {
 		todos = append(todos, todo)
 	}
 	return todos, nil
 }
 
-func (r *TodoRepository) FindByID(id string) (*Todo, error) {
+func (r *TodoRepository) FindByID(id string) (*generated.Todo, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	todo, ok := r.items[id]
-	if !ok {
-		return nil, errors.New("todo not found")
+	if todo, ok := r.items[id]; ok {
+		return todo, nil
 	}
-	return todo, nil
+	return nil, errors.New("todo not found")
 }
 
-func (r *TodoRepository) Create(todo *Todo) error {
+func (r *TodoRepository) Create(todo *generated.Todo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, ok := r.items[todo.ID]; ok {
 		return errors.New("todo already exists")
 	}
-	r.items[todo.ID] = todo
+	r.items[todo.ID] = &generated.Todo{
+		ID:          todo.ID,
+		Title:       todo.Title,
+		Description: todo.Description,
+		IsCompleted: todo.IsCompleted,
+	}
 	return nil
 }
 
-func (r *TodoRepository) Update(todo *Todo) error {
+func (r *TodoRepository) Update(id string, todo *generated.NewTodo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.items[todo.ID]; !ok {
+	if _, ok := r.items[id]; !ok {
+		l.Error("todo not found")
 		return errors.New("todo not found")
 	}
-	r.items[todo.ID] = todo
+	r.items[id] = &generated.Todo{
+		ID:          id,
+		Title:       todo.Title,
+		Description: todo.Description,
+		IsCompleted: todo.IsCompleted,
+	}
 	return nil
 }
 

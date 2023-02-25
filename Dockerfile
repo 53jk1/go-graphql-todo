@@ -23,4 +23,4 @@ COPY --from=builder /go/bin/go-graphql-todo /app/
 
 EXPOSE 8080
 
-CMD ["./go-graphql-todo"]
+CMD ["/app/go-graphql-todo"]

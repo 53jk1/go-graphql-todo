@@ -2,9 +2,14 @@
 
 package generated
 
+type DeleteTodoPayload struct {
+	Message string `json:"message"`
+}
+
 type NewTodo struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	IsCompleted bool   `json:"isCompleted"`
 }
 
 type Todo struct {

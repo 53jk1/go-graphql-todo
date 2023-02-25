@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/53jk1/go-graphql-todo/internal/config"
 	"github.com/53jk1/go-graphql-todo/internal/database"
 	"log"
 	"net/http"
@@ -10,13 +11,19 @@ import (
 	"github.com/53jk1/go-graphql-todo/internal/models"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	_ "github.com/lib/pq"
 )
 
 const defaultPort = "8080"
 
 func main() {
 
-	db, err := database.NewDB()
+	err := config.SetEnvForDatabaseConnection()
+	if err != nil {
+		return
+	}
+
+	db, err := database.NewPostgresDB()
 	if err != nil {
 		log.Fatalf("error creating database connection: %v", err)
 	}

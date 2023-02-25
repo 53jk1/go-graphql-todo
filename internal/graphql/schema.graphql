@@ -5,9 +5,14 @@ type Todo {
     isCompleted: Boolean!
 }
 
+type DeleteTodoPayload {
+    message: String!
+}
+
 input NewTodo {
     title: String!
     description: String!
+    isCompleted: Boolean!
 }
 
 type Query {
@@ -15,7 +20,7 @@ type Query {
 }
 
 type Mutation {
-    createTodo(title: String!, description: String!): Todo!
-    updateTodo(id: ID!, title: String, description: String, isCompleted: Boolean): Todo!
-    deleteTodo(id: ID!): Boolean!
+    createTodo(input: NewTodo!): Todo!
+    updateTodo(id: ID!, input: NewTodo!): Todo!
+    deleteTodo(id: ID!): DeleteTodoPayload!
 }
