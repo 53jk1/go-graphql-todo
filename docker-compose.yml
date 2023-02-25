@@ -5,20 +5,20 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: todo
+      POSTGRES_DB: postgres
     ports:
-      - 5432:5432
+        - 5432:5432
     volumes:
       - db-data:/var/lib/postgresql/data
 
   todo:
     build: .
     ports:
-      - 8080:8080
+        - 8080:8080
     depends_on:
       - db
     environment:
-      DATABASE_URL: "postgres://postgres:postgres@db/todo"
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres?sslmode=disable
 
 volumes:
   db-data:

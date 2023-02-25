@@ -53,6 +53,10 @@ docker-run:
 	@echo "Running $(APP_NAME) $(VERSION) in Docker"
 	docker-compose up
 
+docker-stop:
+	@echo "Stopping $(APP_NAME) $(VERSION) in Docker"
+	docker-compose down
+
 .PHONY: help
 help:
 	@echo "Available targets:"
