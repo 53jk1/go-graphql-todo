@@ -7,7 +7,7 @@ This is a simple project to demonstrate how to create a GraphQL API using Go. It
 ## Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/your-repository.git
+git clone https://github.com/53jk1/go-graphql-todo.git
 ```
 2. Install dependencies:
 ```bash
